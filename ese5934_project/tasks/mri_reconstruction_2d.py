@@ -27,7 +27,6 @@ def reconstruct(
     device=torch.device("cpu"),
     params_init=None,
     kspace_normalization=False,
-    verbose=False,
 ):
     field.to(device)
     coordinates = coordinates.to(device)
@@ -69,10 +68,7 @@ def reconstruct(
             mask,
         )
         dc_loss, tv_loss, image, kspace_hat = aux
-        if verbose:
-            print(
-                f"iteration {t}, dc_loss: {dc_loss.item()}, tv_loss: {tv_loss.item()}"
-            )
+        print(f"iteration {t}, dc_loss: {dc_loss.item()}, tv_loss: {tv_loss.item()}")
         updates, opt_state = optimizer.update(grads, opt_state, params=params)
         params = torchopt.apply_updates(params, updates)
         params = {k: v.detach() for k, v in params.items()}  # detach params
