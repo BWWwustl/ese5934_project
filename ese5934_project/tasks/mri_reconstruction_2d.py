@@ -58,6 +58,9 @@ def reconstruct(
         return loss, (data_consistency_loss, total_variation_loss, image, kspace_hat)
 
     image_show_list = []
+    best_iter = 0 
+    best_loss = 0
+    cur_loss = 0
     for t in range(1, iterations + 1):
         grad_loss_fn = grad(loss_fn, has_aux=True)
         grads, aux = grad_loss_fn(
@@ -68,11 +71,21 @@ def reconstruct(
             mask,
         )
         dc_loss, tv_loss, image, kspace_hat = aux
-        print(f"iteration {t}, dc_loss: {dc_loss.item()}, tv_loss: {tv_loss.item()}")
+
+        cur_loss = dc_loss.item() + tv_loss.item()
+        
+        if best_iter == 0:
+            best_iter = t
+            best_loss = dc_loss.item() + tv_loss.item()
+        else:
+            if cur_loss <= best_loss:
+                best_loss = cur_loss
+                best_iter = t
+        print(f"iteration {t}, dc_loss: {dc_loss.item()}, tv_loss: {tv_loss.item()}, best iter: {best_iter}")
         updates, opt_state = optimizer.update(grads, opt_state, params=params)
         params = torchopt.apply_updates(params, updates)
         params = {k: v.detach() for k, v in params.items()}  # detach params
         # check for results
-        if t % 2 == 0:
-            image_show_list.append(image.detach().cpu())
-    return params, image_show_list
+        #if t % 2 == 0:
+        image_show_list.append(image.detach().cpu())
+    return params, image_show_list, best_iter
